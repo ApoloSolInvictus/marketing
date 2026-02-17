@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INFINITI MKT | AI Growth Engine</title>
+    <title>INFINITI MKT | Creation Engine</title>
     
     <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <!-- React -->
@@ -38,13 +37,7 @@
                         }
                     },
                     animation: {
-                        'gradient-x': 'gradient-x 15s ease infinite',
-                    },
-                    keyframes: {
-                        'gradient-x': {
-                            '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
-                            '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
-                        },
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -74,6 +67,7 @@
         // ==========================================
         // CONFIGURACIÓN NEURONAL
         // ==========================================
+        // Asegúrese de que esta URL sea la de su backend actualizado
         const API_URL = "https://marketing-ia-dca462ac6c86.herokuapp.com"; 
 
         const firebaseConfig = {
@@ -96,12 +90,11 @@
         const Sidebar = ({ tab, setTab, onLogout }) => (
             <aside className="w-20 md:w-64 bg-inf-panel border-r border-inf-border flex flex-col transition-all duration-300 z-20">
                 <div className="h-20 flex items-center justify-center md:justify-start md:px-6 border-b border-inf-border">
-                    <i className="ph ph-infinity text-3xl text-inf-purple mr-0 md:mr-3 animate-pulse"></i>
+                    <i className="ph ph-infinity text-3xl text-inf-purple mr-0 md:mr-3 animate-pulse-slow"></i>
                     <span className="font-bold text-xl tracking-wider hidden md:block">INFINITI</span>
                 </div>
 
                 <nav className="flex-1 py-6 space-y-2 px-2">
-                    <MenuBtn icon="ph-squares-four" label="Dashboard" active={tab==='dashboard'} onClick={()=>setTab('dashboard')} />
                     <MenuBtn icon="ph-paint-brush-broad" label="Creative Studio" active={tab==='studio'} onClick={()=>setTab('studio')} />
                     <MenuBtn icon="ph-strategy" label="Estratega GPT" active={tab==='chat'} onClick={()=>setTab('chat')} />
                 </nav>
@@ -122,72 +115,48 @@
             </button>
         );
 
-        // --- VISTA 1: DASHBOARD ---
-        const DashboardView = () => {
-            useEffect(() => {
-                const ctx = document.getElementById('mainChart');
-                if(ctx) {
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                            datasets: [{
-                                label: 'Engagement',
-                                data: [12, 19, 15, 25, 22, 30, 45],
-                                borderColor: '#8b5cf6',
-                                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                                tension: 0.4, fill: true
-                            }]
-                        },
-                        options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-                    });
-                }
-            }, []);
-
-            return (
-                <div className="p-8 space-y-8 animate-fade-in-up">
-                    <h2 className="text-2xl font-bold">Resumen de Impacto</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <StatCard title="Alcance Total" value="1.2M" icon="ph-globe" color="text-inf-cyan" trend="+12%" />
-                        <StatCard title="Conversiones" value="4,502" icon="ph-target" color="text-inf-purple" trend="+5.4%" />
-                        <StatCard title="ROI Publicitario" value="320%" icon="ph-currency-dollar" color="text-inf-pink" trend="+2.1%" />
-                    </div>
-                    <div className="glass p-6 rounded-2xl h-80 border border-inf-border">
-                        <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Tendencia Semanal</h3>
-                        <div className="h-64"><canvas id="mainChart"></canvas></div>
-                    </div>
-                </div>
-            );
-        };
-
-        const StatCard = ({ title, value, icon, color, trend }) => (
-            <div className="glass p-6 rounded-2xl border border-inf-border hover:border-inf-purple/50 transition">
-                <div className="flex justify-between items-start mb-4">
-                    <div className={`p-3 rounded-xl bg-white/5 ${color}`}><i className={`ph ${icon} text-xl`}></i></div>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-bold">{trend}</span>
-                </div>
-                <p className="text-gray-400 text-sm">{title}</p>
-                <h3 className="text-3xl font-bold text-white">{value}</h3>
-            </div>
-        );
-
-        // --- VISTA 2: CREATIVE STUDIO (TEXTO + IMAGEN) ---
+        // --- VISTA 1: CREATIVE STUDIO (TEXTO + IMAGEN + UPLOAD) ---
         const StudioView = () => {
             const [mode, setMode] = useState('text'); // 'text' | 'image'
             const [prompt, setPrompt] = useState('');
             const [result, setResult] = useState(null);
             const [loading, setLoading] = useState(false);
+            const [uploadedImage, setUploadedImage] = useState(null); // Base64 image
+
+            // Manejo de subida de imagen
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setUploadedImage(reader.result); // Guardar base64
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
 
             const handleCreate = async () => {
-                if(!prompt.trim()) return;
+                if(!prompt.trim() && !uploadedImage) return;
                 setLoading(true);
                 setResult(null);
 
                 try {
                     const endpoint = mode === 'text' ? '/api/chat' : '/api/image';
-                    const payload = mode === 'text' 
-                        ? { message: `ACTÚA COMO: Copywriter experto. CREA: Contenido de marketing sobre "${prompt}". FORMATO: Markdown.`, history: [] }
-                        : { prompt: prompt };
+                    
+                    let payload = {};
+                    
+                    if (mode === 'text') {
+                        payload = { 
+                            message: `ACTÚA COMO: Copywriter experto. CREA: Contenido de marketing sobre "${prompt}". FORMATO: Markdown.`, 
+                            history: [] 
+                        };
+                    } else {
+                        // Modo Imagen: Enviamos el prompt y la imagen de referencia si existe
+                        payload = { 
+                            prompt: prompt,
+                            reference_image: uploadedImage // Enviamos el base64 al backend
+                        };
+                    }
 
                     const res = await fetch(`${API_URL}${endpoint}`, {
                         method: 'POST',
@@ -195,38 +164,65 @@
                         body: JSON.stringify(payload)
                     });
 
+                    if (!res.ok) throw new Error("Error en el servidor");
+
                     const data = await res.json();
                     
                     if (mode === 'text') setResult(data.response);
                     else setResult({ url: data.url, enhanced: data.enhanced_prompt });
 
                 } catch (e) {
-                    alert("Error en el proceso creativo: " + e.message);
+                    alert("Error creativo: " + e.message);
                 } finally {
                     setLoading(false);
                 }
             };
 
             return (
-                <div className="flex flex-col h-full p-8 gap-6">
-                    <div className="glass p-6 rounded-2xl border border-inf-border flex flex-col md:flex-row gap-6">
-                        <div className="w-full md:w-1/3 space-y-4">
+                <div className="flex flex-col h-full p-8 gap-6 animate-fade-in">
+                    <div className="glass p-6 rounded-2xl border border-inf-border flex flex-col md:flex-row gap-6 h-full">
+                        
+                        {/* LEFT PANEL: CONTROLS */}
+                        <div className="w-full md:w-1/3 flex flex-col gap-4">
+                            <h2 className="font-bold text-white mb-2 flex items-center gap-2"><i className="ph ph-lightning text-inf-purple"></i> Panel de Control</h2>
+                            
                             <div className="flex bg-black rounded-lg p-1 border border-inf-border">
                                 <button onClick={()=>setMode('text')} className={`flex-1 py-2 text-xs font-bold rounded-md transition ${mode==='text' ? 'bg-inf-purple text-white' : 'text-gray-500 hover:text-white'}`}>TEXTO</button>
-                                <button onClick={()=>setMode('image')} className={`flex-1 py-2 text-xs font-bold rounded-md transition ${mode==='image' ? 'bg-inf-pink text-white' : 'text-gray-500 hover:text-white'}`}>IMAGEN (DALL-E)</button>
+                                <button onClick={()=>setMode('image')} className={`flex-1 py-2 text-xs font-bold rounded-md transition ${mode==='image' ? 'bg-inf-pink text-white' : 'text-gray-500 hover:text-white'}`}>IMAGEN</button>
                             </div>
+
+                            {/* UPLOAD ZONE (Solo visible en modo imagen) */}
+                            {mode === 'image' && (
+                                <div className="border-2 border-dashed border-inf-border rounded-xl p-4 text-center hover:border-inf-pink/50 transition relative group cursor-pointer bg-black/20">
+                                    <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                    {uploadedImage ? (
+                                        <div className="relative">
+                                            <img src={uploadedImage} className="h-24 mx-auto rounded border border-inf-border object-cover" />
+                                            <button onClick={(e)=>{e.preventDefault(); setUploadedImage(null);}} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"><i className="ph ph-x"></i></button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500 group-hover:text-inf-pink transition">
+                                            <i className="ph ph-upload-simple text-2xl mb-1"></i>
+                                            <p className="text-[10px] font-bold uppercase">Subir Referencia (Opcional)</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <textarea 
                                 value={prompt} onChange={e=>setPrompt(e.target.value)}
-                                className="w-full h-32 bg-black/50 border border-inf-border rounded-xl p-4 text-white focus:border-inf-purple outline-none resize-none placeholder:text-gray-600"
-                                placeholder={mode === 'text' ? "Describe el post, artículo o guion..." : "Describe la imagen publicitaria que deseas..."}
+                                className="flex-1 bg-black/50 border border-inf-border rounded-xl p-4 text-white focus:border-inf-purple outline-none resize-none placeholder:text-gray-600 text-sm"
+                                placeholder={mode === 'text' ? "Describe el post..." : "Describe la imagen que deseas..."}
                             ></textarea>
-                            <button onClick={handleCreate} disabled={loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition flex justify-center items-center gap-2 ${mode==='text' ? 'bg-inf-purple hover:bg-purple-600' : 'bg-inf-pink hover:bg-pink-600'}`}>
+                            
+                            <button onClick={handleCreate} disabled={loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition flex justify-center items-center gap-2 transform active:scale-95 ${mode==='text' ? 'bg-inf-purple hover:bg-purple-600' : 'bg-inf-pink hover:bg-pink-600'}`}>
                                 {loading ? <i className="ph ph-spinner animate-spin"></i> : <i className="ph ph-sparkle"></i>}
-                                {mode === 'text' ? 'Generar Copy' : 'Renderizar Arte'}
+                                {mode === 'text' ? 'Generar Copy' : 'Generar Arte'}
                             </button>
                         </div>
 
-                        <div className="flex-1 bg-black/30 rounded-xl border border-inf-border p-6 overflow-y-auto flex items-center justify-center min-h-[400px]">
+                        {/* RIGHT PANEL: RESULT */}
+                        <div className="flex-1 bg-black/30 rounded-xl border border-inf-border p-6 overflow-y-auto flex items-center justify-center relative min-h-[400px]">
                             {!result && !loading && (
                                 <div className="text-center opacity-30">
                                     <i className={`ph ${mode==='text' ? 'ph-pencil-simple' : 'ph-image'} text-6xl mb-2`}></i>
@@ -236,17 +232,18 @@
                             {loading && (
                                 <div className="text-center">
                                     <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-                                    <p className="text-xs text-inf-cyan animate-pulse">La IA está trabajando...</p>
+                                    <p className="text-xs text-inf-cyan animate-pulse">{mode === 'text' ? 'Redactando...' : (uploadedImage ? 'Analizando referencia y pintando...' : 'Renderizando Arte...')}</p>
                                 </div>
                             )}
                             {result && mode === 'text' && (
                                 <div className="prose prose-invert w-full text-left" dangerouslySetInnerHTML={{__html: marked.parse(result)}}></div>
                             )}
                             {result && mode === 'image' && (
-                                <div className="text-center w-full h-full flex flex-col items-center">
-                                    <img src={result.url} className="max-h-[500px] rounded-lg shadow-2xl border border-inf-border object-contain" />
-                                    <p className="text-[10px] text-gray-500 mt-4 max-w-lg italic">"{result.enhanced}"</p>
-                                    <a href={result.url} target="_blank" className="mt-4 px-6 py-2 bg-white text-black rounded-full font-bold text-xs hover:bg-gray-200 transition">Descargar HD</a>
+                                <div className="text-center w-full h-full flex flex-col items-center justify-center">
+                                    <img src={result.url} className="max-h-full max-w-full rounded-lg shadow-2xl border border-inf-border object-contain" />
+                                    <div className="mt-4 flex gap-4">
+                                        <a href={result.url} target="_blank" download className="px-6 py-2 bg-white text-black rounded-full font-bold text-xs hover:bg-gray-200 transition flex items-center gap-2"><i className="ph ph-download"></i> Descargar HD</a>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -255,7 +252,7 @@
             );
         };
 
-        // --- VISTA 3: CHAT GPT ---
+        // --- VISTA 2: CHAT GPT ---
         const ChatView = () => {
             const [messages, setMessages] = useState([{ role: 'ai', content: 'Hola. Soy tu Estratega de Marketing Senior. ¿Qué campaña planeamos hoy?' }]);
             const [input, setInput] = useState("");
@@ -306,41 +303,46 @@
             );
         };
 
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [tab, setTab] = useState('studio'); // Default tab
-
-            useEffect(() => {
-                 firebase.auth().onAuthStateChanged(u => setUser(u || null));
-            }, []);
-
-            if (!user) return (
-                <div className="h-full flex items-center justify-center bg-inf-bg relative">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-20"></div>
-                    <div className="glass p-10 rounded-2xl w-full max-w-md text-center relative z-10 shadow-2xl shadow-purple-900/20">
-                        <i className="ph ph-infinity text-6xl text-inf-purple mb-4 inline-block animate-pulse"></i>
-                        <h1 className="text-3xl font-bold mb-2">INFINITI <span className="text-inf-purple">MKT</span></h1>
-                        <p className="text-gray-500 text-sm mb-8">Intelligence Growth Engine</p>
-                        <button onClick={() => {
-                            // Simple login simulation/trigger for demo purposes if firebase fails
-                            const email = prompt("Email:");
-                            const pass = prompt("Password:");
-                            firebase.auth().signInWithEmailAndPassword(email, pass).catch(e => alert(e.message));
-                        }} className="w-full py-3 bg-gradient-to-r from-inf-purple to-pink-600 rounded-xl font-bold text-white hover:scale-[1.02] transition">INICIAR SESIÓN</button>
+        const LoginScreen = ({ onLogin }) => {
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const handleLogin = (e) => { e.preventDefault(); onLogin({ email: email || 'admin@infiniti.com' }); };
+            return (
+                <div className="w-full h-full flex items-center justify-center bg-mkt-dark relative">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                    <div className="w-[500px] h-[500px] bg-inf-purple/20 rounded-full blur-[100px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                    
+                    <div className="bg-inf-panel p-10 rounded-2xl border border-inf-border shadow-2xl w-full max-w-md relative z-10 fade-in backdrop-blur-xl">
+                        <div className="text-center mb-8">
+                            <i className="ph ph-rocket-launch text-5xl text-inf-purple mb-4"></i>
+                            <h1 className="text-3xl font-bold text-white tracking-wide">INFINITI <span className="text-inf-purple">MKT</span></h1>
+                            <p className="text-xs text-gray-400 uppercase tracking-widest mt-2">Marketing OS</p>
+                        </div>
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-black/50 border border-inf-border rounded-lg p-4 text-white outline-none focus:border-inf-purple transition" placeholder="Email Agente" />
+                            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-black/50 border border-inf-border rounded-lg p-4 text-white outline-none focus:border-inf-purple transition" placeholder="Clave Maestra" />
+                            <button className="w-full py-4 bg-gradient-to-r from-inf-purple to-pink-600 hover:to-purple-500 text-white font-bold rounded-lg transition shadow-lg transform hover:scale-[1.02]">
+                                INICIAR SISTEMA
+                            </button>
+                        </form>
                     </div>
                 </div>
             );
+        };
 
-            return (
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [tab, setTab] = useState('studio'); 
+            useEffect(() => { firebase.auth().onAuthStateChanged(u => setUser(u || null)); }, []);
+            return <React.Fragment>{!user ? <LoginScreen onLogin={setUser} /> : 
                 <div className="flex h-full w-full bg-inf-bg text-inf-text overflow-hidden">
                     <Sidebar tab={tab} setTab={setTab} onLogout={()=>firebase.auth().signOut()} />
                     <main className="flex-1 h-full overflow-hidden relative">
-                        {tab === 'dashboard' && <DashboardView />}
                         {tab === 'studio' && <StudioView />}
                         {tab === 'chat' && <ChatView />}
                     </main>
                 </div>
-            );
+            }</React.Fragment>;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
